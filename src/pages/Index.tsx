@@ -43,9 +43,11 @@ const Index = () => {
                 id="answer"
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
+                maxLength={5000}
                 className="w-full bg-transparent border-b-2 border-white/20 focus:border-white/60 outline-none px-4 py-2 text-center mystical-text text-lg transition-colors text-white"
                 autoFocus
               />
+              <div className="typing-cursor" />
             </div>
           </form>
         )}

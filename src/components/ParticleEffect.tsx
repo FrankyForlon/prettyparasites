@@ -8,6 +8,7 @@ interface Particle {
   speedX: number;
   speedY: number;
   brightness: number;
+  connections: number[];
 }
 
 const ParticleEffect = () => {
@@ -27,15 +28,18 @@ const ParticleEffect = () => {
     resizeCanvas();
 
     const particles: Particle[] = [];
+    const MAX_DISTANCE = 150; // Maximum distance for constellation lines
+    const CONNECTION_PROBABILITY = 0.3; // Probability of forming a connection
 
     const createParticle = () => {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: Math.random() * 1.5 + 0.5, // Smaller size range
-        speedX: (Math.random() - 0.5) * 0.1, // Slower movement
+        size: Math.random() * 0.8 + 0.2, // Smaller stars (0.2-1.0)
+        speedX: (Math.random() - 0.5) * 0.1,
         speedY: (Math.random() - 0.5) * 0.1,
-        brightness: Math.random() * 0.3 + 0.7, // More consistent brightness
+        brightness: Math.random() * 0.3 + 0.7,
+        connections: [], // Store indices of connected particles
       });
     };
 
@@ -44,10 +48,40 @@ const ParticleEffect = () => {
       createParticle();
     }
 
+    // Create constellation connections
+    particles.forEach((particle, index) => {
+      particles.forEach((otherParticle, otherIndex) => {
+        if (index !== otherIndex) {
+          const dx = particle.x - otherParticle.x;
+          const dy = particle.y - otherParticle.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < MAX_DISTANCE && Math.random() < CONNECTION_PROBABILITY) {
+            particle.connections.push(otherIndex);
+          }
+        }
+      });
+    });
+
     const animate = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // More gentle trail effect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Draw constellation lines first
+      ctx.strokeStyle = 'rgba(158, 158, 158, 0.15)'; // Subtle gray color for lines
+      ctx.lineWidth = 0.2;
+
+      particles.forEach((particle, index) => {
+        particle.connections.forEach(connectedIndex => {
+          const connectedParticle = particles[connectedIndex];
+          ctx.beginPath();
+          ctx.moveTo(particle.x, particle.y);
+          ctx.lineTo(connectedParticle.x, connectedParticle.y);
+          ctx.stroke();
+        });
+      });
+
+      // Then draw particles
       particles.forEach((particle) => {
         particle.x += particle.speedX;
         particle.y += particle.speedY;
