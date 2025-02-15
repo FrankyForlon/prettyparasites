@@ -36,12 +36,11 @@ const ParticleEffect = () => {
     const MAX_DISTANCE = Math.min(window.innerWidth / 5, 150);
     const MIN_DISTANCE = 20;
 
-    // Deeper, more intense colors with lower alpha for reduced luminosity
+    // Limited color palette: white, blue, and red
     const starColors = [
-      'rgba(255, 255, 255, 0.6)',  // White
-      'rgba(200, 30, 30, 0.6)',    // Deep Red
-      'rgba(30, 30, 200, 0.6)',    // Deep Blue
-      'rgba(200, 80, 0, 0.6)',     // Deep Orange
+      'rgba(255, 255, 255, 0.4)',  // White
+      'rgba(30, 30, 200, 0.4)',    // Deep Blue
+      'rgba(200, 30, 30, 0.4)',    // Deep Red
     ];
 
     // Create major stars first (fewer of them)
@@ -51,35 +50,35 @@ const ParticleEffect = () => {
       particles.push({
         x,
         y,
-        size: 1.2, // Smaller main stars
-        speedX: (Math.random() - 0.5) * 0.05, // Increased drift speed
+        size: 0.8, // Even smaller main stars
+        speedX: (Math.random() - 0.5) * 0.05,
         speedY: (Math.random() - 0.5) * 0.05,
-        brightness: Math.random() * 0.3 + 0.4, // Lower brightness
+        brightness: Math.random() * 0.2 + 0.2, // Lower brightness
         nextConnection: null,
         hasIncomingConnection: false,
         isMainStar: true,
         color: starColors[Math.floor(Math.random() * starColors.length)],
-        intensity: Math.random() * 0.4 + 0.3 // Lower intensity
+        intensity: Math.random() * 0.3 + 0.2 // Lower intensity
       });
     }
 
     // Create many more smaller stars
-    for (let i = 0; i < 500; i++) { // Increased from 200 to 500
+    for (let i = 0; i < 1000; i++) { // Increased to 1000 stars
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
 
       particles.push({
         x,
         y,
-        size: 0.5, // Even smaller regular stars
+        size: 0.4, // Even smaller background stars
         speedX: (Math.random() - 0.5) * 0.05,
         speedY: (Math.random() - 0.5) * 0.05,
-        brightness: Math.random() * 0.2 + 0.1, // Much lower brightness
+        brightness: Math.random() * 0.15 + 0.05, // Much lower brightness
         nextConnection: null,
         hasIncomingConnection: false,
         isMainStar: false,
-        color: `rgba(255, 255, 255, ${Math.random() * 0.3 + 0.1})`, // Simple white dots with varying opacity
-        intensity: Math.random() * 0.2 + 0.1 // Much lower intensity
+        color: starColors[Math.floor(Math.random() * starColors.length)],
+        intensity: Math.random() * 0.15 + 0.05 // Much lower intensity
       });
     }
 
@@ -136,7 +135,7 @@ const ParticleEffect = () => {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw constellation lines (very subtle)
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'; // More subtle lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
       ctx.lineWidth = 0.2;
 
       // Draw connections
@@ -162,8 +161,8 @@ const ParticleEffect = () => {
         if (particle.y > canvas.height) particle.y = 0;
 
         if (particle.isMainStar) {
-          // Glow effect only for main stars
-          const glowSize = 20;
+          // Reduced glow effect for main stars
+          const glowSize = 10; // Reduced from 20
           const gradient = ctx.createRadialGradient(
             particle.x, particle.y, 0,
             particle.x, particle.y, glowSize
@@ -171,7 +170,7 @@ const ParticleEffect = () => {
           
           const color = particle.color.replace(/[\d.]+\)$/g, `${particle.intensity})`);
           gradient.addColorStop(0, color);
-          gradient.addColorStop(0.4, color.replace(/[\d.]+\)$/g, '0.05)'));
+          gradient.addColorStop(0.4, color.replace(/[\d.]+\)$/g, '0.03)'));
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
           ctx.beginPath();
