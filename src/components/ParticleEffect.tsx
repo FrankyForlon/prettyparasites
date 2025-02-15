@@ -10,6 +10,7 @@ interface Particle {
   brightness: number;
   connections: number[];
   isPartOfConstellation: boolean;
+  color: string;
 }
 
 const ParticleEffect = () => {
@@ -31,18 +32,27 @@ const ParticleEffect = () => {
     const particles: Particle[] = [];
     const MAX_DISTANCE = 150;
     const MIN_DISTANCE = 30;
-    const BASE_CONNECTION_PROBABILITY = 0.15; // Lower initial probability
+    const BASE_CONNECTION_PROBABILITY = 0.15;
+
+    // Sepia/gold color palette
+    const starColors = [
+      'rgba(255, 214, 170, 1)',  // Warm gold
+      'rgba(255, 198, 145, 1)',  // Light amber
+      'rgba(255, 225, 185, 1)',  // Pale gold
+      'rgba(255, 235, 205, 1)',  // Blanched almond
+    ];
 
     const createParticle = () => {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: Math.random() * 0.5 + 0.1, // Even smaller stars (0.1-0.6)
+        size: Math.random() * 0.3 + 0.1, // Even smaller stars (0.1-0.4)
         speedX: (Math.random() - 0.5) * 0.1,
         speedY: (Math.random() - 0.5) * 0.1,
-        brightness: Math.random() * 0.6 + 0.2, // More variation (0.2-0.8)
+        brightness: Math.random() * 0.7 + 0.1, // More variation (0.1-0.8)
         connections: [],
         isPartOfConstellation: false,
+        color: starColors[Math.floor(Math.random() * starColors.length)],
       });
     };
 
@@ -53,14 +63,13 @@ const ParticleEffect = () => {
 
     // Create constellation connections with improved logic
     const createConstellations = () => {
-      // Start with random seed points for constellations
       const seedPoints = particles
         .map((_, index) => index)
-        .filter(() => Math.random() < 0.1); // 10% of points are constellation seeds
+        .filter(() => Math.random() < 0.1);
 
       seedPoints.forEach(seedIndex => {
         let currentPoint = seedIndex;
-        const constellationSize = Math.floor(Math.random() * 4) + 2; // 2-5 stars per constellation
+        const constellationSize = Math.floor(Math.random() * 4) + 2;
         const usedPoints = new Set([currentPoint]);
         
         for (let i = 0; i < constellationSize; i++) {
@@ -69,7 +78,6 @@ const ParticleEffect = () => {
 
           currentParticle.isPartOfConstellation = true;
           
-          // Calculate connection probabilities for remaining points
           const possibleConnections = particles
             .map((particle, index) => {
               if (usedPoints.has(index)) return null;
@@ -80,7 +88,6 @@ const ParticleEffect = () => {
 
               if (distance < MIN_DISTANCE || distance > MAX_DISTANCE) return null;
 
-              // Higher probability for closer points and points near existing constellation
               const distanceFactor = 1 - (distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE);
               const constellationFactor = particle.isPartOfConstellation ? 1.5 : 1;
               
@@ -93,7 +100,6 @@ const ParticleEffect = () => {
               connection !== null
             );
 
-          // Select next point based on probabilities
           const totalProbability = possibleConnections.reduce((sum, conn) => sum + conn.probability, 0);
           let random = Math.random() * totalProbability;
           
@@ -113,11 +119,12 @@ const ParticleEffect = () => {
     createConstellations();
 
     const animate = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      // Create sepia-toned background effect
+      ctx.fillStyle = 'rgba(28, 23, 30, 0.05)'; // Dark sepia background
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw constellation lines
-      ctx.strokeStyle = 'rgba(158, 158, 158, 0.1)'; // Even more subtle lines
+      ctx.strokeStyle = 'rgba(255, 198, 145, 0.08)'; // Subtle gold color
       ctx.lineWidth = 0.2;
 
       particles.forEach(particle => {
@@ -141,10 +148,19 @@ const ParticleEffect = () => {
         if (particle.y < 0) particle.y = canvas.height;
         if (particle.y > canvas.height) particle.y = 0;
 
-        // Draw particle
+        // Draw particle with color and glow effect
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${particle.brightness})`;
+        
+        // Create glow effect
+        const gradient = ctx.createRadialGradient(
+          particle.x, particle.y, 0,
+          particle.x, particle.y, particle.size * 2
+        );
+        gradient.addColorStop(0, particle.color.replace('1)', `${particle.brightness})`));
+        gradient.addColorStop(1, 'rgba(28, 23, 30, 0)');
+        
+        ctx.fillStyle = gradient;
         ctx.fill();
       });
 
@@ -169,7 +185,7 @@ const ParticleEffect = () => {
         width: '100%',
         height: '100%',
         zIndex: 0,
-        backgroundColor: '#000000',
+        backgroundColor: '#1C171E', // Dark sepia background
       }}
     />
   );
