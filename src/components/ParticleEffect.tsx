@@ -8,7 +8,8 @@ interface Particle {
   speedX: number;
   speedY: number;
   brightness: number;
-  connections: number[];
+  nextConnection: number | null; // Store only the next connected star
+  hasIncomingConnection: boolean; // Track if star is already connected to
   isMainStar: boolean;
   color: string;
   intensity: number;
@@ -31,8 +32,8 @@ const ParticleEffect = () => {
     resizeCanvas();
 
     const particles: Particle[] = [];
-    const CLUSTER_CENTERS = 12; // Number of major stars
-    const MAX_DISTANCE = 150; // Longer lines for constellations
+    const CLUSTER_CENTERS = 12;
+    const MAX_DISTANCE = 100; // Shorter distance for closer connections
     const MIN_DISTANCE = 30;
 
     // Star colors matching the image
@@ -55,11 +56,12 @@ const ParticleEffect = () => {
       particles.push({
         x,
         y,
-        size: Math.random() * 3 + 2, // Larger size for main stars
-        speedX: (Math.random() - 0.5) * 0.02,
-        speedY: (Math.random() - 0.5) * 0.02,
+        size: Math.random() * 3 + 2,
+        speedX: (Math.random() - 0.5) * 0.01, // Slower movement
+        speedY: (Math.random() - 0.5) * 0.01, // Slower movement
         brightness: Math.random() * 0.3 + 0.7,
-        connections: [],
+        nextConnection: null,
+        hasIncomingConnection: false,
         isMainStar: true,
         color: mainStarColors[Math.floor(Math.random() * mainStarColors.length)],
         intensity: Math.random() * 0.5 + 0.5
@@ -86,44 +88,49 @@ const ParticleEffect = () => {
         x,
         y,
         size: Math.random() * 1 + 0.5,
-        speedX: (Math.random() - 0.5) * 0.02,
-        speedY: (Math.random() - 0.5) * 0.02,
+        speedX: (Math.random() - 0.5) * 0.01, // Slower movement
+        speedY: (Math.random() - 0.5) * 0.01, // Slower movement
         brightness: Math.random() * 0.5 + 0.3,
-        connections: [],
+        nextConnection: null,
+        hasIncomingConnection: false,
         isMainStar: false,
         color: smallStarColors[Math.floor(Math.random() * smallStarColors.length)],
         intensity: Math.random() * 0.3 + 0.2
       });
     }
 
-    // Create constellation connections
-    particles.forEach((particle, index) => {
-      if (particle.isMainStar) {
-        const nearbyStars = particles
-          .map((p, i) => {
-            if (i === index) return null;
-            const dx = p.x - particle.x;
-            const dy = p.y - particle.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            return { index: i, distance };
-          })
-          .filter((p): p is { index: number; distance: number } => 
-            p !== null && p.distance < MAX_DISTANCE && p.distance > MIN_DISTANCE
-          )
-          .sort((a, b) => a.distance - b.distance)
-          .slice(0, 3);
+    // Create sequential constellation connections
+    const createConstellations = () => {
+      particles.forEach((particle, index) => {
+        if (!particle.hasIncomingConnection && !particle.nextConnection) {
+          // Find the closest star that hasn't been connected yet
+          let closestStar = particles
+            .map((p, i) => {
+              if (i === index) return null;
+              if (p.hasIncomingConnection) return null; // Skip if already connected to
+              const dx = p.x - particle.x;
+              const dy = p.y - particle.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              return distance < MAX_DISTANCE && distance > MIN_DISTANCE ? { index: i, distance } : null;
+            })
+            .filter((p): p is { index: number; distance: number } => p !== null)
+            .sort((a, b) => a.distance - b.distance)[0];
 
-        nearbyStars.forEach(nearby => {
-          particle.connections.push(nearby.index);
-        });
-      }
-    });
+          if (closestStar) {
+            particle.nextConnection = closestStar.index;
+            particles[closestStar.index].hasIncomingConnection = true;
+          }
+        }
+      });
+    };
+
+    createConstellations();
 
     const animate = () => {
       // Create gradient background
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, 'rgba(0, 20, 40, 0.1)');    // Dark blue
-      gradient.addColorStop(1, 'rgba(40, 40, 20, 0.1)');   // Dark gold
+      gradient.addColorStop(0, 'rgba(0, 20, 40, 0.1)');
+      gradient.addColorStop(1, 'rgba(40, 40, 20, 0.1)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -131,15 +138,14 @@ const ParticleEffect = () => {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.lineWidth = 0.5;
 
+      // Draw connections
       particles.forEach(particle => {
-        if (particle.isMainStar) {
-          particle.connections.forEach(connectedIndex => {
-            const connectedParticle = particles[connectedIndex];
-            ctx.beginPath();
-            ctx.moveTo(particle.x, particle.y);
-            ctx.lineTo(connectedParticle.x, connectedParticle.y);
-            ctx.stroke();
-          });
+        if (particle.nextConnection !== null) {
+          const nextParticle = particles[particle.nextConnection];
+          ctx.beginPath();
+          ctx.moveTo(particle.x, particle.y);
+          ctx.lineTo(nextParticle.x, nextParticle.y);
+          ctx.stroke();
         }
       });
 
@@ -189,7 +195,7 @@ const ParticleEffect = () => {
         width: '100%',
         height: '100%',
         zIndex: 0,
-        backgroundColor: '#001428', // Deep blue background
+        backgroundColor: '#001428',
       }}
     />
   );
