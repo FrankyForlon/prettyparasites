@@ -32,68 +32,83 @@ const ParticleEffect = () => {
     resizeCanvas();
 
     const particles: Particle[] = [];
-    const CLUSTER_CENTERS = 12;
-    // Reduced to 1/5 of screen width
+    const CLUSTER_CENTERS = 8; // Reduced max cluster size to 8
     const MAX_DISTANCE = Math.min(window.innerWidth / 5, 150);
     const MIN_DISTANCE = 20;
 
-    // Deep, intense star colors
+    // Deeper, more intense colors with lower alpha for reduced luminosity
     const starColors = [
-      'rgba(255, 255, 255, 0.9)',  // White
-      'rgba(255, 50, 50, 0.9)',    // Deep Red
-      'rgba(50, 50, 255, 0.9)',    // Deep Blue
-      'rgba(255, 100, 0, 0.9)',    // Deep Orange
+      'rgba(255, 255, 255, 0.6)',  // White
+      'rgba(200, 30, 30, 0.6)',    // Deep Red
+      'rgba(30, 30, 200, 0.6)',    // Deep Blue
+      'rgba(200, 80, 0, 0.6)',     // Deep Orange
     ];
 
-    // Create major stars first
+    // Create major stars first (fewer of them)
     for (let i = 0; i < CLUSTER_CENTERS; i++) {
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
       particles.push({
         x,
         y,
-        size: 1.5, // Smaller fixed size
-        speedX: (Math.random() - 0.5) * 0.01,
-        speedY: (Math.random() - 0.5) * 0.01,
-        brightness: Math.random() * 0.4 + 0.6, // Higher brightness
+        size: 1.2, // Smaller main stars
+        speedX: (Math.random() - 0.5) * 0.05, // Increased drift speed
+        speedY: (Math.random() - 0.5) * 0.05,
+        brightness: Math.random() * 0.3 + 0.4, // Lower brightness
         nextConnection: null,
         hasIncomingConnection: false,
         isMainStar: true,
         color: starColors[Math.floor(Math.random() * starColors.length)],
-        intensity: Math.random() * 0.6 + 0.4 // Higher intensity
+        intensity: Math.random() * 0.4 + 0.3 // Lower intensity
       });
     }
 
-    // Create smaller stars
-    for (let i = 0; i < 200; i++) {
+    // Create many more smaller stars
+    for (let i = 0; i < 500; i++) { // Increased from 200 to 500
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
 
       particles.push({
         x,
         y,
-        size: 0.8, // Smaller fixed size
-        speedX: (Math.random() - 0.5) * 0.01,
-        speedY: (Math.random() - 0.5) * 0.01,
-        brightness: Math.random() * 0.3 + 0.2,
+        size: 0.5, // Even smaller regular stars
+        speedX: (Math.random() - 0.5) * 0.05,
+        speedY: (Math.random() - 0.5) * 0.05,
+        brightness: Math.random() * 0.2 + 0.1, // Much lower brightness
         nextConnection: null,
         hasIncomingConnection: false,
         isMainStar: false,
-        color: starColors[Math.floor(Math.random() * starColors.length)],
-        intensity: Math.random() * 0.3 + 0.2
+        color: `rgba(255, 255, 255, ${Math.random() * 0.3 + 0.1})`, // Simple white dots with varying opacity
+        intensity: Math.random() * 0.2 + 0.1 // Much lower intensity
       });
     }
 
     // Create sequential constellation connections
     const createConstellations = () => {
+      let currentClusterSize = 0;
+      let lastConnectedIndex = null;
+
       particles.forEach((particle, index) => {
-        if (!particle.hasIncomingConnection && !particle.nextConnection) {
+        if (currentClusterSize >= 8) { // Reset after 8 connections
+          currentClusterSize = 0;
+          lastConnectedIndex = null;
+        }
+
+        if (lastConnectedIndex === null) {
+          // Start a new cluster
+          if (!particle.hasIncomingConnection) {
+            currentClusterSize = 1;
+            lastConnectedIndex = index;
+          }
+        } else if (currentClusterSize < 8) { // Limit cluster size
+          // Find closest unconnected star
+          const sourceParticle = particles[lastConnectedIndex];
           let closestStar = particles
             .map((p, i) => {
-              if (i === index) return null;
+              if (i === lastConnectedIndex) return null;
               if (p.hasIncomingConnection) return null;
-              const dx = p.x - particle.x;
-              const dy = p.y - particle.y;
+              const dx = p.x - sourceParticle.x;
+              const dy = p.y - sourceParticle.y;
               const distance = Math.sqrt(dx * dx + dy * dy);
               return distance < MAX_DISTANCE && distance > MIN_DISTANCE ? { index: i, distance } : null;
             })
@@ -101,8 +116,13 @@ const ParticleEffect = () => {
             .sort((a, b) => a.distance - b.distance)[0];
 
           if (closestStar) {
-            particle.nextConnection = closestStar.index;
+            particles[lastConnectedIndex].nextConnection = closestStar.index;
             particles[closestStar.index].hasIncomingConnection = true;
+            lastConnectedIndex = closestStar.index;
+            currentClusterSize++;
+          } else {
+            currentClusterSize = 0;
+            lastConnectedIndex = null;
           }
         }
       });
@@ -116,8 +136,8 @@ const ParticleEffect = () => {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw constellation lines (very subtle)
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 0.3;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'; // More subtle lines
+      ctx.lineWidth = 0.2;
 
       // Draw connections
       particles.forEach(particle => {
@@ -130,7 +150,7 @@ const ParticleEffect = () => {
         }
       });
 
-      // Draw particles with deep glow
+      // Draw particles
       particles.forEach((particle) => {
         particle.x += particle.speedX;
         particle.y += particle.speedY;
@@ -141,25 +161,26 @@ const ParticleEffect = () => {
         if (particle.y < 0) particle.y = canvas.height;
         if (particle.y > canvas.height) particle.y = 0;
 
-        // Enhanced glow effect
-        const glowSize = particle.isMainStar ? 30 : 15;
-        const gradient = ctx.createRadialGradient(
-          particle.x, particle.y, 0,
-          particle.x, particle.y, glowSize
-        );
-        
-        // Create deep, intense glow
-        const color = particle.color.replace(/[\d.]+\)$/g, `${particle.intensity})`);
-        gradient.addColorStop(0, color);
-        gradient.addColorStop(0.4, color.replace(/[\d.]+\)$/g, '0.1)'));
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        if (particle.isMainStar) {
+          // Glow effect only for main stars
+          const glowSize = 20;
+          const gradient = ctx.createRadialGradient(
+            particle.x, particle.y, 0,
+            particle.x, particle.y, glowSize
+          );
+          
+          const color = particle.color.replace(/[\d.]+\)$/g, `${particle.intensity})`);
+          gradient.addColorStop(0, color);
+          gradient.addColorStop(0.4, color.replace(/[\d.]+\)$/g, '0.05)'));
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        }
 
-        // Draw the actual star point (small)
+        // Draw the actual star point
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = particle.color;
