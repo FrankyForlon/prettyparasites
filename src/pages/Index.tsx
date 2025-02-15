@@ -24,10 +24,10 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-black">
       <ParticleEffect />
       
-      <div className="relative z-10 max-w-2xl mx-auto px-4 text-center">
+      <div className="relative z-[1] max-w-2xl mx-auto px-4 text-center">
         <h1 className="mystical-text text-2xl md:text-3xl lg:text-4xl mb-8 fade-in text-white">
           "You are already dead and waiting to die—whoever hath, to him shall be given, and for he who hath not, all shall be taken away."
         </h1>
