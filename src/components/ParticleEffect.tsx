@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 interface Particle {
@@ -15,6 +16,7 @@ interface Particle {
   constellationId?: number;
   centerX?: number;
   centerY?: number;
+  constellationExpiry?: number;
 }
 
 const ParticleEffect = () => {
@@ -34,7 +36,7 @@ const ParticleEffect = () => {
     resizeCanvas();
 
     const particles: Particle[] = [];
-    const CLUSTER_CENTERS = 8;
+    const CLUSTER_CENTERS = 20; // Increased to allow for more constellations
     const MAX_DISTANCE = Math.min(window.innerWidth / 5, 150);
     const MIN_DISTANCE = 20;
     let constellationCounter = 0;
@@ -82,8 +84,23 @@ const ParticleEffect = () => {
     }
 
     const createConstellations = () => {
+      const now = Date.now();
+      
+      // Reset expired constellations
+      particles.forEach(particle => {
+        if (particle.constellationExpiry && now > particle.constellationExpiry) {
+          particle.nextConnection = null;
+          particle.hasIncomingConnection = false;
+          particle.constellationId = undefined;
+          particle.centerX = undefined;
+          particle.centerY = undefined;
+          particle.constellationExpiry = undefined;
+        }
+      });
+
       let currentParticle = null;
       let constellationSize = 0;
+      const targetSize = Math.floor(Math.random() * 9) + 2; // Random size between 2 and 10
 
       particles.forEach((particle, index) => {
         if (particle.hasIncomingConnection || particle.nextConnection !== null) return;
@@ -94,9 +111,12 @@ const ParticleEffect = () => {
           constellationCounter++;
           particle.constellationId = constellationCounter;
           
+          // Set constellation center and expiry time
           particle.centerX = particle.x;
           particle.centerY = particle.y;
-        } else if (constellationSize < 5) {
+          const duration = Math.random() * 52000 + 8000; // Random duration between 8 and 60 seconds
+          particle.constellationExpiry = now + duration;
+        } else if (constellationSize < targetSize) {
           const sourceParticle = particles[currentParticle];
           let closestStar = particles
             .map((p, i) => {
@@ -117,6 +137,7 @@ const ParticleEffect = () => {
             particles[closestStar.index].constellationId = constellationCounter;
             particles[closestStar.index].centerX = sourceParticle.centerX;
             particles[closestStar.index].centerY = sourceParticle.centerY;
+            particles[closestStar.index].constellationExpiry = sourceParticle.constellationExpiry;
             currentParticle = closestStar.index;
             constellationSize++;
           } else {
@@ -130,14 +151,15 @@ const ParticleEffect = () => {
       });
     };
 
-    createConstellations();
-
     const animate = () => {
       ctx.fillStyle = 'rgb(0, 0, 0)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 0.5;
+
+      // Check for new constellation formation
+      createConstellations();
 
       particles.forEach(particle => {
         if (particle.nextConnection !== null) {
