@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 interface Particle {
@@ -36,17 +35,16 @@ const ParticleEffect = () => {
 
     const particles: Particle[] = [];
     const CLUSTER_CENTERS = 8;
-    const MAX_DISTANCE = Math.min(window.innerWidth / 5, 150); // Limit lines to 1/5 of screen
+    const MAX_DISTANCE = Math.min(window.innerWidth / 5, 150);
     const MIN_DISTANCE = 20;
     let constellationCounter = 0;
 
     const starColors = [
-      'rgba(255, 255, 255, 0.8)', // Increased base luminosity by 0.4
+      'rgba(255, 255, 255, 0.8)',
       'rgba(30, 30, 200, 0.8)',
       'rgba(200, 30, 30, 0.8)',
     ];
 
-    // Create major stars
     for (let i = 0; i < CLUSTER_CENTERS; i++) {
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
@@ -54,18 +52,17 @@ const ParticleEffect = () => {
         x,
         y,
         size: 0.8,
-        speedX: (Math.random() - 0.5) * 0.08,
-        speedY: (Math.random() - 0.5) * 0.08,
-        brightness: Math.random() * 0.2 + 0.6, // Increased base brightness
+        speedX: (Math.random() - 0.5) * 0.12,
+        speedY: (Math.random() - 0.5) * 0.12,
+        brightness: Math.random() * 0.2 + 0.6,
         nextConnection: null,
         hasIncomingConnection: false,
         isMainStar: true,
         color: starColors[Math.floor(Math.random() * starColors.length)],
-        intensity: Math.random() * 0.3 + 0.6 // Increased base intensity
+        intensity: Math.random() * 0.3 + 0.6
       });
     }
 
-    // Create background stars
     for (let i = 0; i < 1000; i++) {
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
@@ -73,14 +70,14 @@ const ParticleEffect = () => {
         x,
         y,
         size: 0.4,
-        speedX: (Math.random() - 0.5) * 0.08,
-        speedY: (Math.random() - 0.5) * 0.08,
-        brightness: Math.random() * 0.15 + 0.55, // Increased base brightness
+        speedX: (Math.random() - 0.5) * 0.12,
+        speedY: (Math.random() - 0.5) * 0.12,
+        brightness: Math.random() * 0.15 + 0.55,
         nextConnection: null,
         hasIncomingConnection: false,
         isMainStar: false,
         color: starColors[Math.floor(Math.random() * starColors.length)],
-        intensity: Math.random() * 0.15 + 0.55 // Increased base intensity
+        intensity: Math.random() * 0.15 + 0.55
       });
     }
 
@@ -97,10 +94,9 @@ const ParticleEffect = () => {
           constellationCounter++;
           particle.constellationId = constellationCounter;
           
-          // Set constellation center
           particle.centerX = particle.x;
           particle.centerY = particle.y;
-        } else if (constellationSize < 5) { // Limit constellation size to 5
+        } else if (constellationSize < 5) {
           const sourceParticle = particles[currentParticle];
           let closestStar = particles
             .map((p, i) => {
@@ -140,10 +136,9 @@ const ParticleEffect = () => {
       ctx.fillStyle = 'rgb(0, 0, 0)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.lineWidth = 0.3;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 0.5;
 
-      // Draw constellation lines
       particles.forEach(particle => {
         if (particle.nextConnection !== null) {
           const nextParticle = particles[particle.nextConnection];
@@ -154,16 +149,14 @@ const ParticleEffect = () => {
         }
       });
 
-      // Update particle positions with constellation gravity
       particles.forEach((particle) => {
         if (particle.constellationId && particle.centerX && particle.centerY) {
-          // Apply gravitational pull towards constellation center
           const dx = particle.centerX - particle.x;
           const dy = particle.centerY - particle.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
           if (distance > 0) {
-            const gravity = 0.001; // Adjust gravitational strength
+            const gravity = 0.001;
             particle.speedX += (dx / distance) * gravity;
             particle.speedY += (dy / distance) * gravity;
           }
@@ -172,17 +165,14 @@ const ParticleEffect = () => {
         particle.x += particle.speedX;
         particle.y += particle.speedY;
 
-        // Apply drag to prevent excessive speeds
         particle.speedX *= 0.99;
         particle.speedY *= 0.99;
 
-        // Screen wrapping
         if (particle.x < 0) particle.x = canvas.width;
         if (particle.x > canvas.width) particle.x = 0;
         if (particle.y < 0) particle.y = canvas.height;
         if (particle.y > canvas.height) particle.y = 0;
 
-        // Draw stars
         if (particle.isMainStar) {
           const glowSize = 10;
           const gradient = ctx.createRadialGradient(
