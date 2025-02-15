@@ -63,7 +63,6 @@ const ParticleEffect = () => {
       size: number,
       alpha: number
     ) => {
-      // Increased star glow effect
       const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 2);
       gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
       gradient.addColorStop(0.1, `rgba(255, 255, 255, ${alpha * 0.9})`);
@@ -72,7 +71,7 @@ const ParticleEffect = () => {
 
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.arc(x, y, size * 3, 0, Math.PI * 2); // Increased visible size
+      ctx.arc(x, y, size * 3, 0, Math.PI * 2);
       ctx.fill();
     };
 
@@ -138,13 +137,14 @@ const ParticleEffect = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-screen h-screen"
       style={{ 
-        background: 'black',
         position: 'fixed',
         top: 0,
         left: 0,
-        zIndex: 0
+        width: '100vw',
+        height: '100vh',
+        zIndex: -1,
+        background: '#000000'
       }}
     />
   );

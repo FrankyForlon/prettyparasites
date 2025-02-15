@@ -19,25 +19,23 @@ const Index = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (answer.trim()) {
-      // For now, all answers lead to Rasputin
-      // We'll implement the agent selection logic later
       navigate('/agents/rasputin', { state: { answer } });
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center overflow-hidden">
       <ParticleEffect />
       
       <div className="relative z-10 max-w-2xl mx-auto px-4 text-center">
-        <h1 className="mystical-text text-2xl md:text-3xl lg:text-4xl mb-8 fade-in">
+        <h1 className="mystical-text text-2xl md:text-3xl lg:text-4xl mb-8 fade-in text-white">
           "You are already dead and waiting to die—whoever hath, to him shall be given, and for he who hath not, all shall be taken away."
         </h1>
 
         {showInput && (
           <form onSubmit={handleSubmit} className="fade-in">
             <div className="relative mt-12">
-              <label htmlFor="answer" className="mystical-text block mb-4 text-xl">
+              <label htmlFor="answer" className="mystical-text block mb-4 text-xl text-white">
                 Are you a have or a have not?
               </label>
               <input
@@ -45,7 +43,7 @@ const Index = () => {
                 id="answer"
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
-                className="w-full bg-transparent border-b-2 border-white/20 focus:border-white/60 outline-none px-4 py-2 text-center mystical-text text-lg transition-colors"
+                className="w-full bg-transparent border-b-2 border-white/20 focus:border-white/60 outline-none px-4 py-2 text-center mystical-text text-lg transition-colors text-white"
                 autoFocus
               />
               <div className="typing-cursor" />
