@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 interface Particle {
@@ -156,7 +157,7 @@ const ParticleEffect = () => {
           
           const color = particle.color.replace(/[\d.]+\)$/g, `${particle.intensity})`);
           gradient.addColorStop(0, color);
-          gradient.addColorStop(0.4, color.replace(/[\d.]+\)$/g, '0.03)');
+          gradient.addColorStop(0.4, color.replace(/[\d.]+\)$/g, '0.03)')); // Fixed the syntax error here by adding missing right parenthesis
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
           ctx.beginPath();
