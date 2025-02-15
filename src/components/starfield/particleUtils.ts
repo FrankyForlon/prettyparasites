@@ -7,22 +7,24 @@ export const createZodiacParticles = (canvasWidth: number, canvasHeight: number)
   const particles: Particle[] = [];
   
   zodiacConstellations.forEach(constellation => {
-    const baseX = Math.random() * (canvasWidth - 200) + 100;
-    const baseY = Math.random() * (canvasHeight - 200) + 100;
+    // Calculate a random position for the constellation that's visible
+    const baseX = Math.random() * (canvasWidth * 0.6) + (canvasWidth * 0.2);
+    const baseY = Math.random() * (canvasHeight * 0.6) + (canvasHeight * 0.2);
+    const scale = Math.min(canvasWidth, canvasHeight) * 0.3; // Scale based on screen size
     
     constellation.points.forEach((point, index) => {
       particles.push({
-        x: baseX + point.x * 100,
-        y: baseY + point.y * 100,
-        size: 1.2,
+        x: baseX + (point.x - 0.5) * scale,
+        y: baseY + (point.y - 0.5) * scale,
+        size: 2,
         speedX: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
         speedY: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
-        brightness: 0.8,
-        nextConnections: point.connections,
+        brightness: 1,
+        nextConnections: point.connections.map(i => particles.length + i),
         hasIncomingConnection: false,
         isMainStar: true,
-        color: 'rgba(255, 255, 255, 0.9)',
-        intensity: 0.9,
+        color: 'rgba(255, 255, 255, 1)',
+        intensity: 1,
         isZodiac: true,
         zodiacName: index === 0 ? constellation.name : undefined
       });
@@ -35,28 +37,28 @@ export const createZodiacParticles = (canvasWidth: number, canvasHeight: number)
 export const createMilkyWayParticles = (canvasWidth: number, canvasHeight: number): Particle[] => {
   const particles: Particle[] = [];
   const bandCenterY = canvasHeight * 0.5;
-  const bandWidth = canvasHeight * 0.4;
+  const bandWidth = canvasHeight * 0.6;
   
   for (let i = 0; i < MILKY_WAY_STARS; i++) {
     const x = Math.random() * canvasWidth;
     const distFromCenter = Math.random() * bandWidth - bandWidth/2;
-    const y = bandCenterY + distFromCenter + Math.sin(x/canvasWidth * Math.PI * 2) * bandWidth/3;
+    const y = bandCenterY + distFromCenter + Math.sin(x/canvasWidth * Math.PI * 2) * bandWidth/4;
     
-    const distanceFromBandCenter = Math.abs(y - bandCenterY) / bandWidth;
-    const brightnessMultiplier = Math.max(0, 1 - distanceFromBandCenter * 2);
-    const brightness = Math.random() * 0.3 * brightnessMultiplier + 0.05;
+    const distanceFromBandCenter = Math.abs(y - bandCenterY) / (bandWidth/2);
+    const brightnessMultiplier = Math.max(0, 1 - distanceFromBandCenter);
+    const brightness = Math.random() * 0.5 * brightnessMultiplier + 0.2;
 
     particles.push({
       x,
       y,
-      size: Math.random() * 0.3 + 0.1,
+      size: Math.random() * 1.5 + 0.5,
       speedX: (Math.random() - 0.5) * STAR_DRIFT_SPEED,
       speedY: (Math.random() - 0.5) * STAR_DRIFT_SPEED,
       brightness,
       nextConnections: [],
       hasIncomingConnection: false,
       isMainStar: false,
-      color: `rgba(200, 220, 255, ${brightness})`,
+      color: `rgba(255, 255, 255, ${brightness})`,
       intensity: brightness
     });
   }
@@ -68,18 +70,19 @@ export const createBackgroundParticles = (canvasWidth: number, canvasHeight: num
   const particles: Particle[] = [];
 
   for (let i = 0; i < BACKGROUND_STARS; i++) {
+    const brightness = Math.random() * 0.3 + 0.1;
     particles.push({
       x: Math.random() * canvasWidth,
       y: Math.random() * canvasHeight,
-      size: Math.random() * 0.2 + 0.1,
-      speedX: (Math.random() - 0.5) * STAR_DRIFT_SPEED,
-      speedY: (Math.random() - 0.5) * STAR_DRIFT_SPEED,
-      brightness: Math.random() * 0.15 + 0.05,
+      size: Math.random() * 1 + 0.5,
+      speedX: (Math.random() - 0.5) * STAR_DRIFT_SPEED * 0.5,
+      speedY: (Math.random() - 0.5) * STAR_DRIFT_SPEED * 0.5,
+      brightness,
       nextConnections: [],
       hasIncomingConnection: false,
       isMainStar: false,
-      color: 'rgba(255, 255, 255, 0.1)',
-      intensity: Math.random() * 0.1 + 0.05
+      color: `rgba(255, 255, 255, ${brightness})`,
+      intensity: brightness
     });
   }
 
@@ -91,14 +94,14 @@ export const drawParticle = (
   particle: Particle
 ) => {
   if (particle.isMainStar || particle.isZodiac) {
-    const glowSize = particle.isZodiac ? 12 : 8;
+    const glowSize = particle.isZodiac ? 15 : 10;
     const gradient = ctx.createRadialGradient(
       particle.x, particle.y, 0,
       particle.x, particle.y, glowSize
     );
     
-    gradient.addColorStop(0, particle.color);
-    gradient.addColorStop(0.4, particle.color.replace(/[\d.]+\)$/g, '0.03)'));
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+    gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.1)');
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.beginPath();
@@ -121,8 +124,10 @@ export const updateParticlePosition = (
   particle.x += particle.speedX;
   particle.y += particle.speedY;
 
-  if (particle.x < 0) particle.x = canvasWidth;
-  if (particle.x > canvasWidth) particle.x = 0;
-  if (particle.y < 0) particle.y = canvasHeight;
-  if (particle.y > canvasHeight) particle.y = 0;
+  // Wrap around screen edges with a buffer
+  const buffer = 50;
+  if (particle.x < -buffer) particle.x = canvasWidth + buffer;
+  if (particle.x > canvasWidth + buffer) particle.x = -buffer;
+  if (particle.y < -buffer) particle.y = canvasHeight + buffer;
+  if (particle.y > canvasHeight + buffer) particle.y = -buffer;
 };
