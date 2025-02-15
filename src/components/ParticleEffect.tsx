@@ -9,6 +9,7 @@ interface Particle {
   speedY: number;
   brightness: number;
   connections: number[];
+  isPartOfConstellation: boolean;
 }
 
 const ParticleEffect = () => {
@@ -28,18 +29,20 @@ const ParticleEffect = () => {
     resizeCanvas();
 
     const particles: Particle[] = [];
-    const MAX_DISTANCE = 150; // Maximum distance for constellation lines
-    const CONNECTION_PROBABILITY = 0.3; // Probability of forming a connection
+    const MAX_DISTANCE = 150;
+    const MIN_DISTANCE = 30;
+    const BASE_CONNECTION_PROBABILITY = 0.15; // Lower initial probability
 
     const createParticle = () => {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: Math.random() * 0.8 + 0.2, // Smaller stars (0.2-1.0)
+        size: Math.random() * 0.5 + 0.1, // Even smaller stars (0.1-0.6)
         speedX: (Math.random() - 0.5) * 0.1,
         speedY: (Math.random() - 0.5) * 0.1,
-        brightness: Math.random() * 0.3 + 0.7,
-        connections: [], // Store indices of connected particles
+        brightness: Math.random() * 0.6 + 0.2, // More variation (0.2-0.8)
+        connections: [],
+        isPartOfConstellation: false,
       });
     };
 
@@ -48,30 +51,76 @@ const ParticleEffect = () => {
       createParticle();
     }
 
-    // Create constellation connections
-    particles.forEach((particle, index) => {
-      particles.forEach((otherParticle, otherIndex) => {
-        if (index !== otherIndex) {
-          const dx = particle.x - otherParticle.x;
-          const dy = particle.y - otherParticle.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+    // Create constellation connections with improved logic
+    const createConstellations = () => {
+      // Start with random seed points for constellations
+      const seedPoints = particles
+        .map((_, index) => index)
+        .filter(() => Math.random() < 0.1); // 10% of points are constellation seeds
 
-          if (distance < MAX_DISTANCE && Math.random() < CONNECTION_PROBABILITY) {
-            particle.connections.push(otherIndex);
+      seedPoints.forEach(seedIndex => {
+        let currentPoint = seedIndex;
+        const constellationSize = Math.floor(Math.random() * 4) + 2; // 2-5 stars per constellation
+        const usedPoints = new Set([currentPoint]);
+        
+        for (let i = 0; i < constellationSize; i++) {
+          const currentParticle = particles[currentPoint];
+          if (!currentParticle) continue;
+
+          currentParticle.isPartOfConstellation = true;
+          
+          // Calculate connection probabilities for remaining points
+          const possibleConnections = particles
+            .map((particle, index) => {
+              if (usedPoints.has(index)) return null;
+
+              const dx = particle.x - currentParticle.x;
+              const dy = particle.y - currentParticle.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              if (distance < MIN_DISTANCE || distance > MAX_DISTANCE) return null;
+
+              // Higher probability for closer points and points near existing constellation
+              const distanceFactor = 1 - (distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE);
+              const constellationFactor = particle.isPartOfConstellation ? 1.5 : 1;
+              
+              return {
+                index,
+                probability: distanceFactor * constellationFactor * BASE_CONNECTION_PROBABILITY
+              };
+            })
+            .filter((connection): connection is { index: number; probability: number } => 
+              connection !== null
+            );
+
+          // Select next point based on probabilities
+          const totalProbability = possibleConnections.reduce((sum, conn) => sum + conn.probability, 0);
+          let random = Math.random() * totalProbability;
+          
+          for (const connection of possibleConnections) {
+            random -= connection.probability;
+            if (random <= 0) {
+              currentParticle.connections.push(connection.index);
+              usedPoints.add(connection.index);
+              currentPoint = connection.index;
+              break;
+            }
           }
         }
       });
-    });
+    };
+
+    createConstellations();
 
     const animate = () => {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw constellation lines first
-      ctx.strokeStyle = 'rgba(158, 158, 158, 0.15)'; // Subtle gray color for lines
+      // Draw constellation lines
+      ctx.strokeStyle = 'rgba(158, 158, 158, 0.1)'; // Even more subtle lines
       ctx.lineWidth = 0.2;
 
-      particles.forEach((particle, index) => {
+      particles.forEach(particle => {
         particle.connections.forEach(connectedIndex => {
           const connectedParticle = particles[connectedIndex];
           ctx.beginPath();
@@ -81,7 +130,7 @@ const ParticleEffect = () => {
         });
       });
 
-      // Then draw particles
+      // Draw particles
       particles.forEach((particle) => {
         particle.x += particle.speedX;
         particle.y += particle.speedY;
