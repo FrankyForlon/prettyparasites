@@ -11,6 +11,7 @@ interface Particle {
   connections: number[];
   isPartOfConstellation: boolean;
   color: string;
+  intensity: number;
 }
 
 const ParticleEffect = () => {
@@ -30,102 +31,120 @@ const ParticleEffect = () => {
     resizeCanvas();
 
     const particles: Particle[] = [];
-    const MAX_DISTANCE = 150;
-    const MIN_DISTANCE = 30;
-    const BASE_CONNECTION_PROBABILITY = 0.15;
+    const CLUSTER_CENTERS = 8; // Number of dense star regions
+    const MAX_DISTANCE = 80; // Shorter maximum distance for connections
+    const MIN_DISTANCE = 20;
+    const BASE_CONNECTION_PROBABILITY = 0.3; // Higher base probability for denser patterns
 
-    // Sepia/gold color palette
+    // Create clusters of stars
+    const createClusters = () => {
+      const clusters = [];
+      for (let i = 0; i < CLUSTER_CENTERS; i++) {
+        clusters.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 200 + 100 // Cluster size
+        });
+      }
+      return clusters;
+    };
+
+    const clusters = createClusters();
+
+    // Sepia-toned star colors with more variation
     const starColors = [
       'rgba(255, 214, 170, 1)',  // Warm gold
       'rgba(255, 198, 145, 1)',  // Light amber
       'rgba(255, 225, 185, 1)',  // Pale gold
       'rgba(255, 235, 205, 1)',  // Blanched almond
+      'rgba(245, 245, 220, 1)',  // Beige
     ];
 
+    const calculateStarDensity = (x: number, y: number) => {
+      let density = 0;
+      clusters.forEach(cluster => {
+        const dx = x - cluster.x;
+        const dy = y - cluster.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        density += Math.max(0, 1 - distance / cluster.radius);
+      });
+      return Math.min(1, density);
+    };
+
     const createParticle = () => {
+      // Bias towards cluster centers
+      let x = 0, y = 0, density = 0;
+      
+      if (Math.random() < 0.7) { // 70% of stars appear in clusters
+        const cluster = clusters[Math.floor(Math.random() * clusters.length)];
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * cluster.radius;
+        x = cluster.x + Math.cos(angle) * distance;
+        y = cluster.y + Math.sin(angle) * distance;
+        density = calculateStarDensity(x, y);
+      } else {
+        x = Math.random() * canvas.width;
+        y = Math.random() * canvas.height;
+        density = calculateStarDensity(x, y);
+      }
+
+      const intensity = Math.random() * 0.5 + 0.5; // Base star brightness
+      const size = Math.random() * 0.3 + (density * 0.3); // Larger stars in denser areas
+
       particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: Math.random() * 0.3 + 0.1, // Even smaller stars (0.1-0.4)
-        speedX: (Math.random() - 0.5) * 0.1,
-        speedY: (Math.random() - 0.5) * 0.1,
-        brightness: Math.random() * 0.7 + 0.1, // More variation (0.1-0.8)
+        x,
+        y,
+        size,
+        speedX: (Math.random() - 0.5) * 0.05, // Slower movement
+        speedY: (Math.random() - 0.5) * 0.05,
+        brightness: Math.min(1, intensity + (density * 0.3)),
         connections: [],
         isPartOfConstellation: false,
         color: starColors[Math.floor(Math.random() * starColors.length)],
+        intensity: intensity
       });
     };
 
     // Create initial particles
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 200; i++) {
       createParticle();
     }
 
-    // Create constellation connections with improved logic
     const createConstellations = () => {
-      const seedPoints = particles
-        .map((_, index) => index)
-        .filter(() => Math.random() < 0.1);
+      particles.forEach((particle, index) => {
+        const nearbyParticles = particles
+          .map((p, i) => {
+            if (i === index) return null;
+            const dx = p.x - particle.x;
+            const dy = p.y - particle.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            return { index: i, distance };
+          })
+          .filter((p): p is { index: number; distance: number } => 
+            p !== null && p.distance < MAX_DISTANCE && p.distance > MIN_DISTANCE
+          )
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 2); // Connect to at most 2 closest stars
 
-      seedPoints.forEach(seedIndex => {
-        let currentPoint = seedIndex;
-        const constellationSize = Math.floor(Math.random() * 4) + 2;
-        const usedPoints = new Set([currentPoint]);
-        
-        for (let i = 0; i < constellationSize; i++) {
-          const currentParticle = particles[currentPoint];
-          if (!currentParticle) continue;
-
-          currentParticle.isPartOfConstellation = true;
-          
-          const possibleConnections = particles
-            .map((particle, index) => {
-              if (usedPoints.has(index)) return null;
-
-              const dx = particle.x - currentParticle.x;
-              const dy = particle.y - currentParticle.y;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-
-              if (distance < MIN_DISTANCE || distance > MAX_DISTANCE) return null;
-
-              const distanceFactor = 1 - (distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE);
-              const constellationFactor = particle.isPartOfConstellation ? 1.5 : 1;
-              
-              return {
-                index,
-                probability: distanceFactor * constellationFactor * BASE_CONNECTION_PROBABILITY
-              };
-            })
-            .filter((connection): connection is { index: number; probability: number } => 
-              connection !== null
-            );
-
-          const totalProbability = possibleConnections.reduce((sum, conn) => sum + conn.probability, 0);
-          let random = Math.random() * totalProbability;
-          
-          for (const connection of possibleConnections) {
-            random -= connection.probability;
-            if (random <= 0) {
-              currentParticle.connections.push(connection.index);
-              usedPoints.add(connection.index);
-              currentPoint = connection.index;
-              break;
-            }
+        nearbyParticles.forEach(nearby => {
+          if (Math.random() < BASE_CONNECTION_PROBABILITY * 
+              (1 - nearby.distance / MAX_DISTANCE)) {
+            particle.connections.push(nearby.index);
           }
-        }
+        });
       });
     };
 
     createConstellations();
 
     const animate = () => {
-      // Create sepia-toned background effect
-      ctx.fillStyle = 'rgba(28, 23, 30, 0.05)'; // Dark sepia background
+      // Create sepia background effect with density-based illumination
+      ctx.fillStyle = 'rgba(28, 23, 30, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw constellation lines
-      ctx.strokeStyle = 'rgba(255, 198, 145, 0.08)'; // Subtle gold color
-      ctx.lineWidth = 0.2;
+      ctx.strokeStyle = 'rgba(255, 198, 145, 0.04)';
+      ctx.lineWidth = 0.3;
 
       particles.forEach(particle => {
         particle.connections.forEach(connectedIndex => {
@@ -137,7 +156,7 @@ const ParticleEffect = () => {
         });
       });
 
-      // Draw particles
+      // Draw particles with density-based effects
       particles.forEach((particle) => {
         particle.x += particle.speedX;
         particle.y += particle.speedY;
@@ -148,18 +167,19 @@ const ParticleEffect = () => {
         if (particle.y < 0) particle.y = canvas.height;
         if (particle.y > canvas.height) particle.y = 0;
 
-        // Draw particle with color and glow effect
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        
-        // Create glow effect
+        const density = calculateStarDensity(particle.x, particle.y);
+        const adjustedBrightness = particle.brightness * (1 + density * 0.3);
+
+        // Draw particle with enhanced glow in dense regions
         const gradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
-          particle.x, particle.y, particle.size * 2
+          particle.x, particle.y, particle.size * (2 + density)
         );
-        gradient.addColorStop(0, particle.color.replace('1)', `${particle.brightness})`));
+        gradient.addColorStop(0, particle.color.replace('1)', `${adjustedBrightness})`));
         gradient.addColorStop(1, 'rgba(28, 23, 30, 0)');
         
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = gradient;
         ctx.fill();
       });
@@ -185,7 +205,7 @@ const ParticleEffect = () => {
         width: '100%',
         height: '100%',
         zIndex: 0,
-        backgroundColor: '#1C171E', // Dark sepia background
+        backgroundColor: '#1C171E',
       }}
     />
   );
