@@ -1,8 +1,6 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Particle, ViewportPosition } from './starfield/types';
 import { 
-  createZodiacParticles,
   createMilkyWayParticles,
   createBackgroundParticles,
   drawParticle,
