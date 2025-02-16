@@ -13,9 +13,15 @@ export interface Particle {
   intensity: number;
   isZodiac?: boolean;
   zodiacName?: string;
+  customColor?: string;
 }
 
 export interface ZodiacConstellation {
   name: string;
-  points: { x: number; y: number; connections: number[] }[];
+  points: { 
+    x: number; 
+    y: number; 
+    connections: number[];
+    color?: string;
+  }[];
 }

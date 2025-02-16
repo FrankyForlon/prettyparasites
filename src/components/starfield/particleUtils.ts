@@ -1,4 +1,3 @@
-
 import { Particle } from './types';
 import { zodiacConstellations } from './zodiacData';
 import { MILKY_WAY_STARS, BACKGROUND_STARS, ZODIAC_DRIFT_SPEED, STAR_DRIFT_SPEED } from './constants';
@@ -7,10 +6,9 @@ export const createZodiacParticles = (canvasWidth: number, canvasHeight: number)
   const particles: Particle[] = [];
   
   zodiacConstellations.forEach(constellation => {
-    // Calculate a random position for the constellation that's visible
     const baseX = Math.random() * (canvasWidth * 0.6) + (canvasWidth * 0.2);
     const baseY = Math.random() * (canvasHeight * 0.6) + (canvasHeight * 0.2);
-    const scale = Math.min(canvasWidth, canvasHeight) * 0.3; // Scale based on screen size
+    const scale = Math.min(canvasWidth, canvasHeight) * 0.3;
     
     constellation.points.forEach((point, index) => {
       particles.push({
@@ -23,10 +21,11 @@ export const createZodiacParticles = (canvasWidth: number, canvasHeight: number)
         nextConnections: point.connections.map(i => particles.length + i),
         hasIncomingConnection: false,
         isMainStar: true,
-        color: 'rgba(255, 255, 255, 1)',
+        color: point.color || 'rgba(255, 255, 255, 1)',
         intensity: 1,
         isZodiac: true,
-        zodiacName: index === 0 ? constellation.name : undefined
+        zodiacName: index === 0 ? constellation.name : undefined,
+        customColor: point.color
       });
     });
   });
@@ -100,8 +99,9 @@ export const drawParticle = (
       particle.x, particle.y, glowSize
     );
     
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-    gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.1)');
+    const color = particle.customColor || 'rgba(255, 255, 255, 0.8)';
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(0.4, color.replace('1)', '0.1)'));
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.beginPath();

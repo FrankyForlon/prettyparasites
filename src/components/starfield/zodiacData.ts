@@ -3,18 +3,18 @@ import { ZodiacConstellation } from './types';
 
 export const zodiacConstellations: ZodiacConstellation[] = [
   { 
-    name: 'Aries', 
+    name: 'Bokononism', 
     points: [
-      { x: 0.4, y: 0.3, connections: [1, 2] },
+      { x: 0.4, y: 0.3, connections: [1, 2], color: 'rgba(234, 56, 76, 1)' },
       { x: 0.45, y: 0.32, connections: [2, 3] },
       { x: 0.5, y: 0.35, connections: [3] },
       { x: 0.52, y: 0.38, connections: [] }
     ]
   },
   { 
-    name: 'Taurus', 
+    name: 'Time', 
     points: [
-      { x: 0.3, y: 0.2, connections: [1, 2, 3] },
+      { x: 0.3, y: 0.2, connections: [1, 2, 3], color: 'rgba(14, 165, 233, 1)' },
       { x: 0.35, y: 0.22, connections: [2, 4] },
       { x: 0.32, y: 0.25, connections: [3, 5] },
       { x: 0.28, y: 0.23, connections: [5] },
@@ -24,9 +24,9 @@ export const zodiacConstellations: ZodiacConstellation[] = [
     ]
   },
   { 
-    name: 'Gemini', 
+    name: 'Homework Cat', 
     points: [
-      { x: 0.6, y: 0.4, connections: [1, 2] },
+      { x: 0.6, y: 0.4, connections: [1, 2], color: 'rgba(234, 56, 76, 1)' },
       { x: 0.63, y: 0.45, connections: [3, 4] },
       { x: 0.58, y: 0.43, connections: [5] },
       { x: 0.65, y: 0.5, connections: [6] },
@@ -39,9 +39,9 @@ export const zodiacConstellations: ZodiacConstellation[] = [
     ]
   },
   { 
-    name: 'Cancer', 
+    name: 'Death', 
     points: [
-      { x: 0.7, y: 0.25, connections: [1, 2] },
+      { x: 0.7, y: 0.25, connections: [1, 2], color: 'rgba(14, 165, 233, 1)' },
       { x: 0.73, y: 0.28, connections: [3] },
       { x: 0.68, y: 0.27, connections: [4] },
       { x: 0.75, y: 0.3, connections: [5] },
@@ -50,9 +50,9 @@ export const zodiacConstellations: ZodiacConstellation[] = [
     ]
   },
   { 
-    name: 'Leo', 
+    name: 'Sounds', 
     points: [
-      { x: 0.2, y: 0.6, connections: [1, 2] },
+      { x: 0.2, y: 0.6, connections: [1, 2], color: 'rgba(234, 56, 76, 1)' },
       { x: 0.25, y: 0.62, connections: [3] },
       { x: 0.18, y: 0.63, connections: [4] },
       { x: 0.28, y: 0.65, connections: [5, 6] },
@@ -63,9 +63,9 @@ export const zodiacConstellations: ZodiacConstellation[] = [
     ]
   },
   { 
-    name: 'Virgo', 
+    name: 'Pictures', 
     points: [
-      { x: 0.45, y: 0.7, connections: [1, 2] },
+      { x: 0.45, y: 0.7, connections: [1, 2], color: 'rgba(14, 165, 233, 1)' },
       { x: 0.48, y: 0.72, connections: [3] },
       { x: 0.43, y: 0.73, connections: [4, 5] },
       { x: 0.5, y: 0.75, connections: [6] },
