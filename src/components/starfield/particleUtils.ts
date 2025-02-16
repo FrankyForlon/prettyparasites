@@ -6,15 +6,28 @@ export const createZodiacParticles = (canvasWidth: number, canvasHeight: number)
   const particles: Particle[] = [];
   
   zodiacConstellations.forEach(constellation => {
-    const baseX = Math.random() * (canvasWidth * 0.6) + (canvasWidth * 0.2);
-    const baseY = Math.random() * (canvasHeight * 0.6) + (canvasHeight * 0.2);
-    const scale = Math.min(canvasWidth, canvasHeight) * 0.3;
+    let baseX, baseY;
+    
+    if (constellation.name === 'Alexa') {
+      baseX = canvasWidth * 0.2;
+      baseY = canvasHeight * 0.2;
+    } else if (constellation.name === 'Rasputin') {
+      baseX = canvasWidth * 0.8;
+      baseY = canvasHeight * 0.8;
+    } else {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * 0.3 + 0.2;
+      baseX = canvasWidth * (0.5 + Math.cos(angle) * distance);
+      baseY = canvasHeight * (0.5 + Math.sin(angle) * distance);
+    }
+    
+    const scale = Math.min(canvasWidth, canvasHeight) * 0.2;
     
     constellation.points.forEach((point, index) => {
       particles.push({
         x: baseX + (point.x - 0.5) * scale,
         y: baseY + (point.y - 0.5) * scale,
-        size: 2,
+        size: 1.2,
         speedX: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
         speedY: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
         brightness: 1,
@@ -22,7 +35,7 @@ export const createZodiacParticles = (canvasWidth: number, canvasHeight: number)
         hasIncomingConnection: false,
         isMainStar: true,
         color: point.color || 'rgba(255, 255, 255, 1)',
-        intensity: 1,
+        intensity: 1.2,
         isZodiac: true,
         zodiacName: index === 0 ? constellation.name : undefined,
         customColor: point.color
@@ -92,8 +105,22 @@ export const drawParticle = (
   ctx: CanvasRenderingContext2D,
   particle: Particle
 ) => {
-  if (particle.isMainStar || particle.isZodiac) {
-    const glowSize = particle.isZodiac ? 15 : 10;
+  if (particle.isZodiac && particle.nextConnections.length > 0) {
+    particle.nextConnections.forEach(targetIndex => {
+      const target = particles[targetIndex];
+      if (target) {
+        ctx.beginPath();
+        ctx.moveTo(particle.x, particle.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.strokeStyle = 'rgba(180, 80, 20, 0.3)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    });
+  }
+
+  if (particle.isZodiac) {
+    const glowSize = 8;
     const gradient = ctx.createRadialGradient(
       particle.x, particle.y, 0,
       particle.x, particle.y, glowSize
@@ -124,7 +151,6 @@ export const updateParticlePosition = (
   particle.x += particle.speedX;
   particle.y += particle.speedY;
 
-  // Wrap around screen edges with a buffer
   const buffer = 50;
   if (particle.x < -buffer) particle.x = canvasWidth + buffer;
   if (particle.x > canvasWidth + buffer) particle.x = -buffer;
