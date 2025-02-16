@@ -1,50 +1,68 @@
 
 import { Particle } from './types';
-import { zodiacConstellations } from './zodiacData';
-import { MILKY_WAY_STARS, BACKGROUND_STARS, ZODIAC_DRIFT_SPEED, STAR_DRIFT_SPEED } from './constants';
+import { 
+  MILKY_WAY_STARS, 
+  BACKGROUND_STARS, 
+  ZODIAC_DRIFT_SPEED, 
+  STAR_DRIFT_SPEED,
+  MAX_CONNECTION_DISTANCE,
+  MIN_CONSTELLATION_STARS,
+  MAX_CONSTELLATION_STARS,
+  INITIAL_CONSTELLATION_NAMES
+} from './constants';
 
-export const createZodiacParticles = (canvasWidth: number, canvasHeight: number): Particle[] => {
-  const particles: Particle[] = [];
-  
-  zodiacConstellations.forEach(constellation => {
-    let baseX, baseY;
-    
-    if (constellation.name === 'Alexa') {
-      baseX = canvasWidth * 0.2;
-      baseY = canvasHeight * 0.2;
-    } else if (constellation.name === 'Rasputin') {
-      baseX = canvasWidth * 0.8;
-      baseY = canvasHeight * 0.8;
-    } else {
-      const angle = Math.random() * Math.PI * 2;
-      const distance = Math.random() * 0.3 + 0.2;
-      baseX = canvasWidth * (0.5 + Math.cos(angle) * distance);
-      baseY = canvasHeight * (0.5 + Math.sin(angle) * distance);
-    }
-    
-    const scale = Math.min(canvasWidth, canvasHeight) * 0.2;
-    
-    constellation.points.forEach((point, index) => {
-      particles.push({
-        x: baseX + (point.x - 0.5) * scale,
-        y: baseY + (point.y - 0.5) * scale,
-        size: 1.2,
-        speedX: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
-        speedY: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
-        brightness: 1,
-        nextConnections: point.connections.map(i => particles.length + i),
-        hasIncomingConnection: false,
-        isMainStar: true,
-        color: point.color || 'rgba(255, 255, 255, 1)',
-        intensity: 1.2,
-        isZodiac: true,
-        zodiacName: index === 0 ? constellation.name : undefined,
-        customColor: point.color
-      });
-    });
-  });
+export const generateNewConstellation = (
+  baseX: number,
+  baseY: number,
+  existingParticles: Particle[],
+  nameIndex?: number
+): Particle[] => {
+  const constellation: Particle[] = [];
+  const numStars = Math.floor(Math.random() * (MAX_CONSTELLATION_STARS - MIN_CONSTELLATION_STARS + 1)) + MIN_CONSTELLATION_STARS;
+  const spread = 200; // Maximum distance between stars in the constellation
 
-  return particles;
+  // Create first star
+  const firstStar = {
+    x: baseX + (Math.random() - 0.5) * spread,
+    y: baseY + (Math.random() - 0.5) * spread,
+    size: 1.2,
+    speedX: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
+    speedY: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
+    brightness: 1,
+    nextConnections: [1], // Will connect to the next star
+    hasIncomingConnection: false,
+    isMainStar: true,
+    color: 'rgba(255, 255, 255, 1)',
+    intensity: 1.2,
+    isZodiac: true,
+    zodiacName: nameIndex !== undefined ? INITIAL_CONSTELLATION_NAMES[nameIndex] : undefined
+  };
+  constellation.push(firstStar);
+
+  // Create remaining stars
+  for (let i = 1; i < numStars; i++) {
+    // Get previous star as reference
+    const prevStar = constellation[i - 1];
+    
+    // Create new star near the previous one
+    const newStar = {
+      x: prevStar.x + (Math.random() - 0.5) * MAX_CONNECTION_DISTANCE,
+      y: prevStar.y + (Math.random() - 0.5) * MAX_CONNECTION_DISTANCE,
+      size: 1.2,
+      speedX: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
+      speedY: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
+      brightness: 1,
+      nextConnections: i < numStars - 1 ? [i + 1] : [], // Connect to next star if not last
+      hasIncomingConnection: true,
+      isMainStar: true,
+      color: 'rgba(255, 255, 255, 1)',
+      intensity: 1.2,
+      isZodiac: true
+    };
+    constellation.push(newStar);
+  }
+
+  return constellation;
 };
 
 export const createMilkyWayParticles = (canvasWidth: number, canvasHeight: number): Particle[] => {
@@ -137,6 +155,14 @@ export const drawParticle = (
     ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
     ctx.fill();
+
+    // Draw constellation name
+    if (particle.zodiacName) {
+      ctx.font = '12px Arial';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.textAlign = 'center';
+      ctx.fillText(particle.zodiacName, particle.x, particle.y - 15);
+    }
   }
 
   ctx.beginPath();
@@ -147,15 +173,15 @@ export const drawParticle = (
 
 export const updateParticlePosition = (
   particle: Particle,
-  canvasWidth: number,
-  canvasHeight: number
+  worldWidth: number,
+  worldHeight: number
 ) => {
   particle.x += particle.speedX;
   particle.y += particle.speedY;
 
-  const buffer = 50;
-  if (particle.x < -buffer) particle.x = canvasWidth + buffer;
-  if (particle.x > canvasWidth + buffer) particle.x = -buffer;
-  if (particle.y < -buffer) particle.y = canvasHeight + buffer;
-  if (particle.y > canvasHeight + buffer) particle.y = -buffer;
+  // Wrap around in a larger world space
+  if (particle.x < 0) particle.x = worldWidth;
+  if (particle.x > worldWidth) particle.x = 0;
+  if (particle.y < 0) particle.y = worldHeight;
+  if (particle.y > worldHeight) particle.y = 0;
 };

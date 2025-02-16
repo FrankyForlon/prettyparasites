@@ -14,6 +14,13 @@ export interface Particle {
   isZodiac?: boolean;
   zodiacName?: string;
   customColor?: string;
+  worldX?: number; // Position in the infinite world
+  worldY?: number;
+}
+
+export interface ViewportPosition {
+  x: number;
+  y: number;
 }
 
 export interface ZodiacConstellation {
