@@ -61,7 +61,7 @@ const ParticleEffect = () => {
       // Update and draw particles
       particles.forEach(particle => {
         updateParticlePosition(particle, canvas.width, canvas.height);
-        drawParticle(ctx, particle);
+        drawParticle(ctx, particle, particles);
       });
 
       requestAnimationFrame(animate);

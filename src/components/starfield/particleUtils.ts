@@ -1,3 +1,4 @@
+
 import { Particle } from './types';
 import { zodiacConstellations } from './zodiacData';
 import { MILKY_WAY_STARS, BACKGROUND_STARS, ZODIAC_DRIFT_SPEED, STAR_DRIFT_SPEED } from './constants';
@@ -103,11 +104,12 @@ export const createBackgroundParticles = (canvasWidth: number, canvasHeight: num
 
 export const drawParticle = (
   ctx: CanvasRenderingContext2D,
-  particle: Particle
+  particle: Particle,
+  allParticles: Particle[]
 ) => {
   if (particle.isZodiac && particle.nextConnections.length > 0) {
     particle.nextConnections.forEach(targetIndex => {
-      const target = particles[targetIndex];
+      const target = allParticles[targetIndex];
       if (target) {
         ctx.beginPath();
         ctx.moveTo(particle.x, particle.y);
