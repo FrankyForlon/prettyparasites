@@ -9,13 +9,20 @@ export const MAX_CONSTELLATION_STARS = 10;
 export const VIEWPORT_MOVE_SPEED = 2;
 export const MAX_CONNECTION_DISTANCE = 150;
 
-// Star colors
+// Star colors for background stars
 export const STAR_COLORS = [
   'rgba(14, 165, 233, 0.8)', // Sapphire
   'rgba(52, 211, 153, 0.8)', // Jade
   'rgba(155, 135, 245, 0.8)', // Purple
   'rgba(139, 92, 246, 0.8)', // Deeper Purple
   'rgba(167, 243, 208, 0.8)' // Light Jade
+];
+
+// Neon colors for constellation names
+export const CONSTELLATION_NAME_COLORS = [
+  '#D946EF', // Magenta Pink
+  '#F97316', // Bright Orange
+  '#1EAEDB'  // Bright Blue
 ];
 
 // Constellation formation probabilities

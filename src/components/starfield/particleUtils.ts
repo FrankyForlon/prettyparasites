@@ -1,4 +1,3 @@
-
 import { Particle } from './types';
 import { 
   MILKY_WAY_STARS, 
@@ -10,7 +9,8 @@ import {
   MAX_CONSTELLATION_STARS,
   INITIAL_CONSTELLATION_NAMES,
   STAR_COLORS,
-  CONSTELLATION_STOP_PROBS
+  CONSTELLATION_STOP_PROBS,
+  CONSTELLATION_NAME_COLORS
 } from './constants';
 
 export const generateNewConstellation = (
@@ -37,11 +37,11 @@ export const generateNewConstellation = (
   const firstStar = {
     x: baseX + (Math.random() - 0.5) * MAX_CONNECTION_DISTANCE,
     y: baseY + (Math.random() - 0.5) * MAX_CONNECTION_DISTANCE,
-    size: 0.8, // Smaller size
+    size: 0.8,
     speedX: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
     speedY: (Math.random() - 0.5) * ZODIAC_DRIFT_SPEED,
     brightness: 0.8,
-    nextConnections: [1], // Will connect to next star
+    nextConnections: [1],
     hasIncomingConnection: false,
     isMainStar: true,
     color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
@@ -51,7 +51,7 @@ export const generateNewConstellation = (
   };
   constellation.push(firstStar);
 
-  // Create remaining stars
+  // Create subsequent stars with sequential connections
   for (let i = 1; i < numStars; i++) {
     const prevStar = constellation[i - 1];
     
@@ -89,7 +89,7 @@ const isValidConnectionPoint = (x: number, y: number, constellation: Particle[])
   const nearbyStars = constellation.filter(star => 
     Math.hypot(star.x - x, star.y - y) < MAX_CONNECTION_DISTANCE
   );
-  return nearbyStars.length < 3;
+  return nearbyStars.length < 2; // Limit to maximum 2 connections
 };
 
 export const createMilkyWayParticles = (canvasWidth: number, canvasHeight: number): Particle[] => {
@@ -100,7 +100,7 @@ export const createMilkyWayParticles = (canvasWidth: number, canvasHeight: numbe
     particles.push({
       x: Math.random() * canvasWidth,
       y: Math.random() * canvasHeight,
-      size: 0.5 + Math.random() * 0.3, // Smaller size range
+      size: 0.5 + Math.random() * 0.3,
       speedX: (Math.random() - 0.5) * STAR_DRIFT_SPEED,
       speedY: (Math.random() - 0.5) * STAR_DRIFT_SPEED,
       brightness,
@@ -123,7 +123,7 @@ export const createBackgroundParticles = (canvasWidth: number, canvasHeight: num
     particles.push({
       x: Math.random() * canvasWidth,
       y: Math.random() * canvasHeight,
-      size: 0.3 + Math.random() * 0.2, // Even smaller background stars
+      size: 0.3 + Math.random() * 0.2,
       speedX: (Math.random() - 0.5) * STAR_DRIFT_SPEED * 0.5,
       speedY: (Math.random() - 0.5) * STAR_DRIFT_SPEED * 0.5,
       brightness,
@@ -158,8 +158,10 @@ export const drawParticle = (
   }
 
   if (particle.isZodiac && particle.zodiacName) {
-    ctx.font = '16px "Cormorant Garamond", serif'; // Elegant font
-    ctx.fillStyle = 'rgba(180, 80, 20, 0.8)'; // Deep orange
+    ctx.font = '16px "Cormorant Garamond", serif';
+    ctx.fillStyle = CONSTELLATION_NAME_COLORS[
+      Math.floor(Math.random() * CONSTELLATION_NAME_COLORS.length)
+    ];
     ctx.textAlign = 'center';
     ctx.fillText(particle.zodiacName, particle.x, particle.y - 15);
   }

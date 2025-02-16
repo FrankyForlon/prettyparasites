@@ -1,4 +1,6 @@
+
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Particle, ViewportPosition } from './starfield/types';
 import { 
   createMilkyWayParticles,
@@ -13,7 +15,9 @@ const ParticleEffect = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [viewport, setViewport] = useState<ViewportPosition>({ x: 0, y: 0 });
   const particlesRef = useRef<Particle[]>([]);
-  const keysPressed = useRef<Set<string>>(new Set());
+  const isDraggingRef = useRef(false);
+  const lastMousePosRef = useRef({ x: 0, y: 0 });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -45,28 +49,56 @@ const ParticleEffect = () => {
       particlesRef.current.push(...newConstellation);
     }
 
-    // Handle keyboard navigation
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keysPressed.current.add(e.key);
+    // Handle mouse/touch events for dragging
+    const handleMouseDown = (e: MouseEvent) => {
+      isDraggingRef.current = true;
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      keysPressed.current.delete(e.key);
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      
+      const dx = e.clientX - lastMousePosRef.current.x;
+      const dy = e.clientY - lastMousePosRef.current.y;
+      
+      setViewport(v => ({
+        x: v.x - dx,
+        y: v.y - dy
+      }));
+      
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    const updateViewport = () => {
-      const speed = VIEWPORT_MOVE_SPEED;
-      if (keysPressed.current.has('ArrowLeft')) setViewport(v => ({ ...v, x: v.x - speed }));
-      if (keysPressed.current.has('ArrowRight')) setViewport(v => ({ ...v, x: v.x + speed }));
-      if (keysPressed.current.has('ArrowUp')) setViewport(v => ({ ...v, y: v.y - speed }));
-      if (keysPressed.current.has('ArrowDown')) setViewport(v => ({ ...v, y: v.y + speed }));
+    const handleMouseUp = () => {
+      isDraggingRef.current = false;
     };
+
+    const handleClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Check if click is on a constellation name
+      particlesRef.current.forEach(particle => {
+        if (particle.zodiacName) {
+          const screenX = particle.x - viewport.x;
+          const screenY = particle.y - viewport.y;
+          
+          if (Math.abs(x - screenX) < 50 && Math.abs(y - screenY) < 20) {
+            const path = particle.zodiacName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            navigate(`/agents/${path}`);
+          }
+        }
+      });
+    };
+
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('mouseleave', handleMouseUp);
+    canvas.addEventListener('click', handleClick);
 
     const animate = () => {
-      updateViewport();
       ctx.fillStyle = 'rgb(0, 0, 0)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -83,18 +115,8 @@ const ParticleEffect = () => {
           drawParticle(ctx, { ...particle, x: screenX, y: screenY }, particlesRef.current);
         }
 
-        updateParticlePosition(particle, canvas.width * 3, canvas.height * 3); // Larger area for particles
+        updateParticlePosition(particle, canvas.width * 3, canvas.height * 3);
       });
-
-      // Generate new constellations occasionally
-      if (Math.random() < 0.01) {
-        const newConstellation = generateNewConstellation(
-          viewport.x + Math.random() * canvas.width,
-          viewport.y + Math.random() * canvas.height,
-          particlesRef.current
-        );
-        particlesRef.current.push(...newConstellation);
-      }
 
       requestAnimationFrame(animate);
     };
@@ -104,10 +126,13 @@ const ParticleEffect = () => {
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseup', handleMouseUp);
+      canvas.removeEventListener('mouseleave', handleMouseUp);
+      canvas.removeEventListener('click', handleClick);
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <canvas
@@ -120,6 +145,7 @@ const ParticleEffect = () => {
         height: '100%',
         zIndex: 0,
         backgroundColor: '#000000',
+        cursor: isDraggingRef.current ? 'grabbing' : 'grab'
       }}
     />
   );
