@@ -6,10 +6,10 @@ import {
   createMilkyWayParticles,
   createBackgroundParticles,
   drawParticle,
-  updateParticlePosition,
-  generateNewConstellation
+  updateParticlePosition
 } from './starfield/particleUtils';
-import { VIEWPORT_MOVE_SPEED, INITIAL_CONSTELLATIONS } from './starfield/constants';
+import { zodiacConstellations } from './starfield/zodiacData';
+import { VIEWPORT_MOVE_SPEED } from './starfield/constants';
 
 const ParticleEffect = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,27 +32,37 @@ const ParticleEffect = () => {
     };
     resizeCanvas();
 
-    // Initialize particles
+    // Initialize background stars
     particlesRef.current = [
       ...createMilkyWayParticles(canvas.width, canvas.height),
       ...createBackgroundParticles(canvas.width, canvas.height)
     ];
 
-    // Generate initial constellations
-    for (let i = 0; i < INITIAL_CONSTELLATIONS; i++) {
-      const newConstellation = generateNewConstellation(
-        viewport.x + Math.random() * canvas.width,
-        viewport.y + Math.random() * canvas.height,
-        particlesRef.current,
-        i
-      );
-      particlesRef.current.push(...newConstellation);
-    }
+    // Initialize constellations from predefined data
+    zodiacConstellations.forEach(constellation => {
+      const stars: Particle[] = constellation.points.map((point, index) => ({
+        x: point.x * canvas.width,
+        y: point.y * canvas.height,
+        size: 0.8,
+        speedX: (Math.random() - 0.5) * 0.02,
+        speedY: (Math.random() - 0.5) * 0.02,
+        brightness: 1,
+        nextConnections: point.connections,
+        hasIncomingConnection: index > 0,
+        isMainStar: true,
+        color: point.color || 'rgba(155, 135, 245, 0.8)',
+        intensity: 1,
+        isZodiac: true,
+        zodiacName: index === 0 ? constellation.name : undefined
+      }));
+      particlesRef.current.push(...stars);
+    });
 
     // Handle mouse/touch events for dragging
     const handleMouseDown = (e: MouseEvent) => {
       isDraggingRef.current = true;
       lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+      canvas.style.cursor = 'grabbing';
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -71,6 +81,7 @@ const ParticleEffect = () => {
 
     const handleMouseUp = () => {
       isDraggingRef.current = false;
+      canvas.style.cursor = 'grab';
     };
 
     const handleClick = (e: MouseEvent) => {
